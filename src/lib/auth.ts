@@ -47,7 +47,7 @@ export const logout = async (): Promise<void> => {
 // Get current user info from token
 export const getCurrentUser = async () => {
     try {
-        const response = await api.get('/users/me');
+        const response = await api.get('/users/profile');
         return response.data;
     } catch (error) {
         throw new Error('Failed to fetch user information');

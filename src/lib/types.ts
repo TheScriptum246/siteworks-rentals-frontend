@@ -1,9 +1,4 @@
-// User types
-export interface Role {
-    id: number;
-    name: 'ROLE_CLIENT' | 'ROLE_STAFF' | 'ROLE_ADMIN';
-}
-
+// User types - simplified to match backend
 export interface User {
     id: number;
     username: string;
@@ -11,9 +6,8 @@ export interface User {
     firstName: string;
     lastName: string;
     phone?: string;
-    roles: Role[];
+    roles: string[];
     createdAt: string;
-    updatedAt: string;
 }
 
 // Equipment types
@@ -92,7 +86,7 @@ export interface AuthResponse {
     id: number;
     username: string;
     email: string;
-    roles: string[];
+    roles: string[]; // Array of role strings like ["ROLE_CLIENT"]
 }
 
 // API response types
@@ -149,19 +143,4 @@ export interface EquipmentCardProps {
     equipment: Equipment;
     onSelect?: (equipment: Equipment) => void;
     selected?: boolean;
-    showBookButton?: boolean;
-}
-
-export interface PaginationInfo {
-    page: number;
-    size: number;
-    totalElements: number;
-    totalPages: number;
-    first: boolean;
-    last: boolean;
-}
-
-export interface PagedResponse<T> {
-    content: T[];
-    pageable: PaginationInfo;
 }
