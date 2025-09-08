@@ -47,7 +47,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                             return;
                         }
 
-                        // Build user data from decoded token and auth response
+                        // Build user data from decoded token
                         const userData: User = {
                             id: decoded.id || 0,
                             username: decoded.sub || '',
@@ -55,7 +55,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                             firstName: decoded.firstName || '',
                             lastName: decoded.lastName || '',
                             phone: decoded.phone || '',
-                            roles: decoded.roles || [], // Simple string array
+                            roles: decoded.roles || [],
                             createdAt: decoded.iat ? new Date(decoded.iat * 1000).toISOString() : ''
                         };
 
@@ -81,34 +81,49 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const login = async (credentials: LoginRequest): Promise<void> => {
         try {
             setLoading(true);
-            const response = await authLogin(credentials);
+            console.log('AuthContext: Starting login process');
 
-            // Validate that we received a proper token
-            if (!response.token || typeof response.token !== 'string') {
+            const response = await authLogin(credentials);
+            console.log('AuthContext: Login response received', response);
+
+            // The response has accessToken, not token
+            if (!response.accessToken || typeof response.accessToken !== 'string') {
+                console.error('AuthContext: Invalid accessToken in response', response);
                 throw new Error('Invalid token received from server');
             }
 
-            // Build user data from auth response
+            // Try to decode the token to make sure it's valid
+            let decodedToken;
+            try {
+                decodedToken = jwtDecode(response.accessToken);
+                console.log('AuthContext: Token decoded successfully', decodedToken);
+            } catch (decodeError) {
+                console.error('AuthContext: Failed to decode token', decodeError);
+                throw new Error('Invalid token format received from server');
+            }
+
+            // Build user data from auth response (use response data primarily)
             const userData: User = {
                 id: response.id,
                 username: response.username,
                 email: response.email,
-                firstName: '', // Will be populated from backend if needed
+                firstName: '', // Backend doesn't include in JWT response, could fetch separately
                 lastName: '',
                 phone: '',
-                roles: response.roles, // Simple string array
+                roles: response.roles, // Backend sends this in response
                 createdAt: new Date().toISOString()
             };
 
+            console.log('AuthContext: Setting user data', userData);
             setUser(userData);
-            setToken(response.token);
+            setToken(response.accessToken); // Use accessToken here
 
             toast.success(`Welcome back, ${userData.username}!`);
 
             // Redirect to dashboard
             router.push('/dashboard');
         } catch (error: any) {
-            console.error('Login error:', error);
+            console.error('AuthContext: Login error', error);
             const errorMessage = error.message || 'Login failed. Please check your credentials.';
             toast.error(errorMessage);
             throw error;

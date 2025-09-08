@@ -1,17 +1,37 @@
 import api, { setAuthTokens, clearAuthTokens } from './api';
-import { LoginRequest, RegisterRequest, AuthResponse, MessageResponse } from './types';
+import { LoginRequest, RegisterRequest, MessageResponse } from './types';
+
+// Define the actual response type from backend (uses accessToken, not token)
+interface AuthResponse {
+    accessToken: string;  // Backend sends accessToken, not token
+    refreshToken: string;
+    tokenType: string;
+    id: number;
+    username: string;
+    email: string;
+    roles: string[];
+}
 
 // Login function
 export const login = async (credentials: LoginRequest): Promise<AuthResponse> => {
     try {
-        const response = await api.post<AuthResponse>('/auth/signin', credentials);
-        const { token, refreshToken } = response.data;
+        console.log('Login attempt with:', credentials.username);
+        const response = await api.post('/auth/signin', credentials);
 
-        // Store tokens in cookies
-        setAuthTokens(token, refreshToken);
+        console.log('Login successful:', response.data);
+        const responseData = response.data;
 
-        return response.data;
+        if (!responseData.accessToken) {
+            console.error('No accessToken in response:', responseData);
+            throw new Error('No token received from server');
+        }
+
+        // Store tokens in cookies (use accessToken as the main token)
+        setAuthTokens(responseData.accessToken, responseData.refreshToken);
+
+        return responseData;
     } catch (error: any) {
+        console.error('Login error:', error.response?.data || error.message);
         if (error.response?.data?.message) {
             throw new Error(error.response.data.message);
         }
