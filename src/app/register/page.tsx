@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import RegisterForm from '@/components/RegisterForm';
 import Navbar from '@/components/Navbar';
@@ -21,7 +21,10 @@ export default function RegisterPage() {
             <div className="min-h-screen bg-gray-50">
                 <Navbar />
                 <div className="flex items-center justify-center pt-20">
-                    <div className="loading-spinner"></div>
+                    <div className="text-center">
+                        <div className="loading-spinner mx-auto mb-4"></div>
+                        <p className="text-gray-600">Loading...</p>
+                    </div>
                 </div>
             </div>
         );
@@ -34,7 +37,7 @@ export default function RegisterPage() {
     return (
         <div className="min-h-screen bg-gray-50">
             <Navbar />
-            <div className="flex items-center justify-center px-4 py-12">
+            <div className="flex items-center justify-center container-padding py-12 pt-24">
                 <RegisterForm />
             </div>
         </div>

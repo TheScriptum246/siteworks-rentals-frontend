@@ -1,4 +1,9 @@
-// User and Authentication Types
+// User types
+export interface Role {
+    id: number;
+    name: 'ROLE_CLIENT' | 'ROLE_STAFF' | 'ROLE_ADMIN';
+}
+
 export interface User {
     id: number;
     username: string;
@@ -8,13 +13,64 @@ export interface User {
     phone?: string;
     roles: Role[];
     createdAt: string;
+    updatedAt: string;
 }
 
-export interface Role {
+// Equipment types
+export interface EquipmentCategory {
     id: number;
-    name: 'ROLE_CLIENT' | 'ROLE_STAFF';
+    name: string;
+    description: string;
 }
 
+export interface Equipment {
+    id: number;
+    name: string;
+    description: string;
+    category: EquipmentCategory;
+    dailyRate: number;
+    weeklyRate: number;
+    monthlyRate: number;
+    available: boolean;
+    imageUrl?: string;
+    specifications?: string;
+    createdAt: string;
+    updatedAt: string;
+}
+
+// Rental types
+export interface RentalStatus {
+    RESERVED: 'RESERVED';
+    CONFIRMED: 'CONFIRMED';
+    ACTIVE: 'ACTIVE';
+    COMPLETED: 'COMPLETED';
+    CANCELLED: 'CANCELLED';
+}
+
+export interface RentalEquipment {
+    id: number;
+    equipment: Equipment;
+    quantity: number;
+    dailyRate: number;
+    totalDays: number;
+    subtotal: number;
+}
+
+export interface Rental {
+    id: number;
+    client: User;
+    staffMember?: User;
+    startDate: string;
+    endDate: string;
+    status: keyof RentalStatus;
+    totalAmount: number;
+    notes?: string;
+    rentalEquipment: RentalEquipment[];
+    createdAt: string;
+    updatedAt: string;
+}
+
+// Auth request/response types
 export interface LoginRequest {
     username: string;
     password: string;
@@ -26,85 +82,30 @@ export interface RegisterRequest {
     password: string;
     firstName: string;
     lastName: string;
-    phone?: string;  // Make this optional to match RegisterFormData
+    phone?: string;
 }
 
 export interface AuthResponse {
     token: string;
     refreshToken: string;
+    type: string;
     id: number;
     username: string;
     email: string;
     roles: string[];
 }
 
-// Equipment Types
-export interface Equipment {
-    id: number;
-    name: string;
-    description: string;
-    category: EquipmentCategory;
-    dailyRate: number;
-    status: EquipmentStatus;
-    manufacturer: string;
-    model: string;
-    year: number;
-    serialNumber: string;
-    imageUrl?: string;
-    createdAt: string;
-    updatedAt: string;
-}
-
-export interface EquipmentCategory {
-    id: number;
-    name: string;
-    description: string;
-}
-
-export type EquipmentStatus = 'AVAILABLE' | 'RENTED' | 'MAINTENANCE' | 'OUT_OF_SERVICE';
-
-// Rental Types
-export interface Rental {
-    id: number;
-    client: User;
-    startDate: string;
-    endDate: string;
-    totalAmount: number;
-    status: RentalStatus;
-    rentalEquipment: RentalEquipment[];
-    notes?: string;
-    createdAt: string;
-    updatedAt: string;
-}
-
-export interface RentalEquipment {
-    id: number;
-    equipment: Equipment;
-    dailyRateAtBooking: number;
-    daysRented: number;
-}
-
-export type RentalStatus = 'RESERVED' | 'CONFIRMED' | 'ACTIVE' | 'COMPLETED' | 'CANCELLED';
-
-export interface CreateRentalRequest {
-    equipmentIds: number[];
-    startDate: string;
-    endDate: string;
-    notes?: string;
-}
-
-// API Response Types
-export interface ApiResponse<T> {
-    data: T;
-    message?: string;
-    status: number;
-}
-
+// API response types
 export interface MessageResponse {
     message: string;
 }
 
-// Form Types using Yup (instead of Zod to match makeup salon project)
+export interface ApiError {
+    message: string;
+    details?: string[];
+}
+
+// Form types
 export interface LoginFormData {
     username: string;
     password: string;
@@ -117,11 +118,50 @@ export interface RegisterFormData {
     confirmPassword: string;
     firstName: string;
     lastName: string;
+    phone?: string;
 }
 
 export interface BookingFormData {
-    equipmentId: number;
     startDate: string;
     endDate: string;
+    equipmentSelections: {
+        equipmentId: number;
+        quantity: number;
+    }[];
     notes?: string;
+}
+
+// Context types
+export interface AuthContextType {
+    user: User | null;
+    token: string | null;
+    login: (credentials: LoginRequest) => Promise<void>;
+    register: (userData: RegisterRequest) => Promise<void>;
+    logout: () => void;
+    loading: boolean;
+    isAuthenticated: boolean;
+    isClient: boolean;
+    isStaff: boolean;
+}
+
+// Component prop types
+export interface EquipmentCardProps {
+    equipment: Equipment;
+    onSelect?: (equipment: Equipment) => void;
+    selected?: boolean;
+    showBookButton?: boolean;
+}
+
+export interface PaginationInfo {
+    page: number;
+    size: number;
+    totalElements: number;
+    totalPages: number;
+    first: boolean;
+    last: boolean;
+}
+
+export interface PagedResponse<T> {
+    content: T[];
+    pageable: PaginationInfo;
 }
