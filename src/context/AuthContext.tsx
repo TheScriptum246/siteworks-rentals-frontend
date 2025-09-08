@@ -1,67 +1,80 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import { jwtDecode } from 'jwt-decode';
-import { User, AuthContextType, LoginRequest, RegisterRequest } from '@/lib/types';
-import { login as authLogin, register as authRegister, logout as authLogout } from '@/lib/auth';
-import { getAuthToken, clearAuthTokens, isTokenValid } from '@/lib/api';
-import toast from 'react-hot-toast';
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
+import { jwtDecode } from 'jwt-decode';
+import toast from 'react-hot-toast';
+import { login as authLogin, register as authRegister, logout as authLogout } from '@/lib/auth';
+import { clearAuthTokens, getAuthToken } from '@/lib/api';
+import { User, LoginRequest, RegisterRequest } from '@/lib/types';
+
+interface AuthContextType {
+    user: User | null;
+    token: string | null;
+    loading: boolean;
+    login: (credentials: LoginRequest) => Promise<void>;
+    register: (userData: RegisterRequest) => Promise<void>;
+    logout: () => void;
+    isAuthenticated: boolean;
+}
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const useAuth = () => {
-    const context = useContext(AuthContext);
-    if (context === undefined) {
-        throw new Error('useAuth must be used within an AuthProvider');
-    }
-    return context;
-};
-
-interface AuthProviderProps {
-    children: React.ReactNode;
-}
-
-export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
+export function AuthProvider({ children }: { children: ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
     const [token, setToken] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
     const router = useRouter();
 
-    // Initialize auth state on mount
+    // Initialize auth state from stored token
     useEffect(() => {
-        const initializeAuth = () => {
-            const savedToken = getAuthToken();
+        const initializeAuth = async () => {
+            try {
+                const savedToken = getAuthToken();
 
-            if (savedToken && isTokenValid(savedToken)) {
-                try {
-                    const decoded: any = jwtDecode(savedToken);
+                if (savedToken && typeof savedToken === 'string' && savedToken.trim()) {
+                    try {
+                        const decoded: any = jwtDecode(savedToken);
 
-                    // Create user object from JWT payload
-                    const userData: User = {
-                        id: decoded.id,
-                        username: decoded.sub, // JWT subject is usually username
-                        email: decoded.email || '',
-                        firstName: decoded.firstName || '',
-                        lastName: decoded.lastName || '',
-                        phone: decoded.phone || '',
-                        roles: decoded.roles ? decoded.roles.map((role: string) => ({
-                            id: 0, // We don't have role ID in JWT
-                            name: role as 'ROLE_CLIENT' | 'ROLE_STAFF' | 'ROLE_ADMIN'
-                        })) : [],
-                        createdAt: decoded.iat ? new Date(decoded.iat * 1000).toISOString() : '',
-                        updatedAt: decoded.iat ? new Date(decoded.iat * 1000).toISOString() : ''
-                    };
+                        // Check if token is expired
+                        const currentTime = Date.now() / 1000;
+                        if (decoded.exp && decoded.exp < currentTime) {
+                            console.log('Token expired, clearing auth');
+                            clearAuthTokens();
+                            setLoading(false);
+                            return;
+                        }
 
-                    setUser(userData);
-                    setToken(savedToken);
-                } catch (error) {
-                    console.error('Error decoding token:', error);
-                    clearAuthTokens();
+                        // Build user data from decoded token
+                        const userData: User = {
+                            id: decoded.id || 0,
+                            username: decoded.sub || '',
+                            email: decoded.email || '',
+                            firstName: decoded.firstName || '',
+                            lastName: decoded.lastName || '',
+                            phone: decoded.phone || '',
+                            roles: decoded.roles ? decoded.roles.map((role: string) => ({
+                                id: 0,
+                                name: role as 'ROLE_CLIENT' | 'ROLE_STAFF' | 'ROLE_ADMIN'
+                            })) : [],
+                            createdAt: decoded.iat ? new Date(decoded.iat * 1000).toISOString() : '',
+                            updatedAt: decoded.iat ? new Date(decoded.iat * 1000).toISOString() : ''
+                        };
+
+                        setUser(userData);
+                        setToken(savedToken);
+                    } catch (decodeError) {
+                        console.error('Error decoding token:', decodeError);
+                        clearAuthTokens();
+                        toast.error('Invalid session. Please sign in again.');
+                    }
                 }
+            } catch (error) {
+                console.error('Error initializing auth:', error);
+                clearAuthTokens();
+            } finally {
+                setLoading(false);
             }
-
-            setLoading(false);
         };
 
         initializeAuth();
@@ -72,17 +85,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             setLoading(true);
             const response = await authLogin(credentials);
 
+            // Validate that we received a proper token
+            if (!response.token || typeof response.token !== 'string') {
+                throw new Error('Invalid token received from server');
+            }
+
             // Decode the token to get user info
             const decoded: any = jwtDecode(response.token);
 
             const userData: User = {
-                id: decoded.id,
-                username: decoded.sub,
-                email: decoded.email || '',
+                id: decoded.id || response.id || 0,
+                username: decoded.sub || response.username || '',
+                email: decoded.email || response.email || '',
                 firstName: decoded.firstName || '',
                 lastName: decoded.lastName || '',
                 phone: decoded.phone || '',
-                roles: decoded.roles ? decoded.roles.map((role: string) => ({
+                roles: response.roles ? response.roles.map((role: string) => ({
                     id: 0,
                     name: role as 'ROLE_CLIENT' | 'ROLE_STAFF' | 'ROLE_ADMIN'
                 })) : [],
@@ -98,6 +116,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             // Redirect to dashboard
             router.push('/dashboard');
         } catch (error: any) {
+            console.error('Login error:', error);
             const errorMessage = error.message || 'Login failed. Please check your credentials.';
             toast.error(errorMessage);
             throw error;
@@ -113,6 +132,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
             toast.success('Account created successfully! Please sign in.');
         } catch (error: any) {
+            console.error('Register error:', error);
             const errorMessage = error.message || 'Registration failed. Please try again.';
             toast.error(errorMessage);
             throw error;
@@ -131,19 +151,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     // Computed values
     const isAuthenticated = !!user && !!token;
-    const isClient = user?.roles.some(role => role.name === 'ROLE_CLIENT') || false;
-    const isStaff = user?.roles.some(role => role.name === 'ROLE_STAFF') || false;
 
     const value: AuthContextType = {
         user,
         token,
+        loading,
         login,
         register,
         logout,
-        loading,
         isAuthenticated,
-        isClient,
-        isStaff,
     };
 
     return (
@@ -151,4 +167,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             {children}
         </AuthContext.Provider>
     );
-};
+}
+
+export function useAuth(): AuthContextType {
+    const context = useContext(AuthContext);
+    if (context === undefined) {
+        throw new Error('useAuth must be used within an AuthProvider');
+    }
+    return context;
+}
