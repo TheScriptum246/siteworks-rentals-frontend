@@ -1,23 +1,15 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
-import './globals.css';
-import { AuthProvider } from '@/context/AuthContext';
 import { Toaster } from 'react-hot-toast';
+import { AuthProvider } from '@/context/AuthContext';
+import Footer from '@/components/Footer';
+import './globals.css';
 
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-    title: 'SiteWorks Rentals - Construction Equipment Rental',
-    description: 'Professional construction equipment rental management system. Book quality tools and equipment for your construction projects.',
-    keywords: 'construction, equipment, rental, tools, machinery, building, contractors',
-    authors: [{ name: 'SiteWorks Team' }],
-    robots: 'index, follow',
-    openGraph: {
-        title: 'SiteWorks Rentals - Construction Equipment Rental',
-        description: 'Professional construction equipment rental management system',
-        type: 'website',
-        locale: 'en_US',
-    },
+    title: 'SiteWorks Rentals - Professional Construction Equipment Rental',
+    description: 'Professional construction equipment rental made simple. Get the tools you need, when you need them.',
 };
 
 export default function RootLayout({
@@ -29,7 +21,12 @@ export default function RootLayout({
         <html lang="en">
         <body className={inter.className}>
         <AuthProvider>
-            {children}
+            <div className="min-h-screen flex flex-col">
+                <main className="flex-1">
+                    {children}
+                </main>
+                <Footer />
+            </div>
             <Toaster
                 position="top-right"
                 toastOptions={{
@@ -41,7 +38,7 @@ export default function RootLayout({
                     success: {
                         duration: 3000,
                         iconTheme: {
-                            primary: '#4ade80',
+                            primary: '#10b981',
                             secondary: '#fff',
                         },
                     },

@@ -120,8 +120,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
             toast.success(`Welcome back, ${userData.username}!`);
 
-            // Redirect to dashboard
-            router.push('/dashboard');
+            if (userData.roles?.includes('ROLE_STAFF')) {
+                router.push('/dashboard');
+            } else {
+                router.push('/equipment'); // Clients go to equipment page
+            }
         } catch (error: any) {
             console.error('AuthContext: Login error', error);
             const errorMessage = error.message || 'Login failed. Please check your credentials.';

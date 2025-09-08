@@ -4,10 +4,11 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { useAuth } from '@/context/AuthContext';
-import { LoginFormData } from '@/lib/types';
+import {LoginFormData, LoginRequest} from '@/lib/types';
 import { loginSchema } from '@/lib/schemas';
 import { Eye, EyeOff, LogIn, Loader2, HardHat } from 'lucide-react';
 import Link from 'next/link';
+import toast from "react-hot-toast";
 
 export default function LoginForm() {
     const { login } = useAuth();
@@ -22,16 +23,13 @@ export default function LoginForm() {
         resolver: yupResolver(loginSchema),
     });
 
-    const onSubmit = async (data: LoginFormData) => {
+    const onSubmit = async (data: LoginRequest) => {
+        setIsLoading(true);
         try {
-            setIsLoading(true);
-            await login({
-                username: data.username,
-                password: data.password,
-            });
-            // Redirect will be handled by auth context
-        } catch (error) {
-            // Error handling is done in auth context with toast
+            await login(data);
+            toast.success('Login successful!');
+        } catch (error: any) {
+            toast.error(error.response?.data?.message || 'Login failed');
         } finally {
             setIsLoading(false);
         }

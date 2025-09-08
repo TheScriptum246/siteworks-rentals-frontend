@@ -81,7 +81,7 @@ export default function EquipmentCard({
                             {equipment.name}
                         </h3>
                         <p className="text-sm text-gray-600">
-                            {equipment.category.name}
+                            {equipment.category}
                         </p>
                     </div>
                 </div>

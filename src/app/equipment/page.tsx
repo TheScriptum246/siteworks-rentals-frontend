@@ -51,8 +51,8 @@ export default function EquipmentPage() {
         const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
             item.description.toLowerCase().includes(searchTerm.toLowerCase());
 
-        // Category filter
-        const matchesCategory = !selectedCategory || item.category.id.toString() === selectedCategory;
+        // Category filter - Fixed: compare category string directly
+        const matchesCategory = !selectedCategory || item.category === selectedCategory;
 
         // Price filter
         const minPrice = priceRange.min ? parseFloat(priceRange.min) : 0;
@@ -152,8 +152,8 @@ export default function EquipmentPage() {
                                             >
                                                 <option value="">All Categories</option>
                                                 {categories.map((category) => (
-                                                    <option key={category.id} value={category.id.toString()}>
-                                                        {category.name}
+                                                    <option key={category} value={category}>
+                                                        {category.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, l => l.toUpperCase())}
                                                     </option>
                                                 ))}
                                             </select>

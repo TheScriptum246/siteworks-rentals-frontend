@@ -2,9 +2,14 @@ import axios, { AxiosResponse } from 'axios';
 import Cookies from 'js-cookie';
 import { jwtDecode } from 'jwt-decode';
 
+// Standardize API URL - use one consistent environment variable
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080/api';
+
+console.log('🌐 API Base URL:', API_BASE_URL); // Debug line to check the URL
+
 // Create axios instance
 const api = axios.create({
-    baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api',
+    baseURL: API_BASE_URL,
     headers: {
         'Content-Type': 'application/json',
     },
@@ -61,6 +66,8 @@ const processQueue = (error: any, token: string | null = null) => {
 api.interceptors.request.use(
     (config) => {
         const token = getAuthToken();
+        console.log('🔐 Token in request:', token ? 'Present' : 'Not found'); // Debug line
+
         if (token && isTokenValid(token)) {
             config.headers.Authorization = `Bearer ${token}`;
         }
@@ -77,12 +84,13 @@ api.interceptors.response.use(
         return response;
     },
     async (error) => {
+        console.error('❌ API Error:', error.response?.status, error.response?.data); // Debug line
+
         const originalRequest = error.config;
 
         // Handle 401 errors (unauthorized)
         if (error.response?.status === 401 && !originalRequest._retry) {
             if (isRefreshing) {
-                // If we're already refreshing, queue this request
                 return new Promise((resolve, reject) => {
                     failedQueue.push({ resolve, reject });
                 }).then(token => {
@@ -103,33 +111,28 @@ api.interceptors.response.use(
                     console.log('🔄 Attempting to refresh token...');
 
                     const response = await axios.post(
-                        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api'}/auth/refresh`,
+                        `${API_BASE_URL}/auth/refresh`,
                         { refreshToken }
                     );
 
-                    const { token: newToken, refreshToken: newRefreshToken } = response.data;
+                    const { accessToken: newToken, refreshToken: newRefreshToken } = response.data;
 
                     console.log('✅ Token refreshed successfully');
 
                     setAuthTokens(newToken, newRefreshToken);
-
-                    // Update the original request with new token
-                    originalRequest.headers.Authorization = `Bearer ${newToken}`;
-
-                    // Process the queued requests
                     processQueue(null, newToken);
 
+                    originalRequest.headers.Authorization = `Bearer ${newToken}`;
                     return api(originalRequest);
-                } catch (refreshError: any) {
-                    console.log('❌ Token refresh failed:', refreshError.response?.data?.message || refreshError.message);
 
-                    // Refresh failed, logout user
+                } catch (refreshError) {
+                    console.error('❌ Token refresh failed:', refreshError);
                     processQueue(refreshError, null);
                     clearAuthTokens();
 
-                    // Redirect to login if not already there
-                    if (!window.location.pathname.includes('/login')) {
-                        window.location.href = '/login';
+                    // Redirect to login
+                    if (typeof window !== 'undefined') {
+                        window.location.href = '/auth/login';
                     }
 
                     return Promise.reject(refreshError);
@@ -137,12 +140,11 @@ api.interceptors.response.use(
                     isRefreshing = false;
                 }
             } else {
-                // No refresh token, logout
-                console.log('❌ No refresh token available');
-                processQueue(error, null);
+                console.log('❌ No refresh token found');
                 clearAuthTokens();
-                if (!window.location.pathname.includes('/login')) {
-                    window.location.href = '/login';
+
+                if (typeof window !== 'undefined') {
+                    window.location.href = '/auth/login';
                 }
             }
         }

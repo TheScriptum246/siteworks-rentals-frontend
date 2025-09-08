@@ -1,9 +1,23 @@
+// Replace your src/components/Navbar.tsx with this:
+
 'use client';
 
 import { useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
-import { HardHat, Menu, X, User, LogOut, Home, Calendar, Settings } from 'lucide-react';
+import {
+    HardHat,
+    Menu,
+    X,
+    User,
+    LogOut,
+    Home,
+    Calendar,
+    Settings,
+    Truck,
+    Users,
+    BarChart3
+} from 'lucide-react';
 
 export default function Navbar() {
     const { user, logout, isAuthenticated } = useAuth();
@@ -17,6 +31,29 @@ export default function Navbar() {
     const toggleMenu = () => {
         setIsMenuOpen(!isMenuOpen);
     };
+
+    // Navigation items based on user role
+    const getNavigationItems = () => {
+        if (!isAuthenticated || !user) return [];
+
+        if (user.roles?.includes('ROLE_STAFF')) {
+            // Staff navigation
+            return [
+                { name: 'Dashboard', href: '/dashboard', icon: BarChart3 },
+                { name: 'Manage Rentals', href: '/manage-rentals', icon: Calendar },
+                { name: 'Equipment', href: '/manage-equipment', icon: HardHat },
+                { name: 'Clients', href: '/clients', icon: Users },
+            ];
+        } else {
+            // Client navigation
+            return [
+                { name: 'Browse Equipment', href: '/equipment', icon: HardHat },
+                { name: 'My Rentals', href: '/my-rentals', icon: Truck },
+            ];
+        }
+    };
+
+    const navigationItems = getNavigationItems();
 
     return (
         <nav className="bg-white shadow-md border-b border-gray-200 fixed top-0 left-0 right-0 z-50">
@@ -34,29 +71,19 @@ export default function Navbar() {
                     <div className="hidden md:flex items-center space-x-4">
                         {isAuthenticated ? (
                             <>
-                                <Link
-                                    href="/dashboard"
-                                    className="flex items-center space-x-1 px-3 py-2 rounded-md text-gray-700 hover:text-construction-orange hover:bg-gray-50 transition-colors"
-                                >
-                                    <Home className="w-4 h-4" />
-                                    <span>Dashboard</span>
-                                </Link>
-
-                                <Link
-                                    href="/equipment"
-                                    className="flex items-center space-x-1 px-3 py-2 rounded-md text-gray-700 hover:text-construction-orange hover:bg-gray-50 transition-colors"
-                                >
-                                    <HardHat className="w-4 h-4" />
-                                    <span>Equipment</span>
-                                </Link>
-
-                                <Link
-                                    href="/booking"
-                                    className="flex items-center space-x-1 px-3 py-2 rounded-md text-gray-700 hover:text-construction-orange hover:bg-gray-50 transition-colors"
-                                >
-                                    <Calendar className="w-4 h-4" />
-                                    <span>Book Rental</span>
-                                </Link>
+                                {navigationItems.map((item) => {
+                                    const Icon = item.icon;
+                                    return (
+                                        <Link
+                                            key={item.name}
+                                            href={item.href}
+                                            className="flex items-center space-x-1 px-3 py-2 rounded-md text-gray-700 hover:text-construction-orange hover:bg-gray-50 transition-colors"
+                                        >
+                                            <Icon className="w-4 h-4" />
+                                            <span>{item.name}</span>
+                                        </Link>
+                                    );
+                                })}
 
                                 {/* User Menu */}
                                 <div className="relative group">
@@ -65,26 +92,22 @@ export default function Navbar() {
                                         <span>{user?.firstName || user?.username}</span>
                                     </button>
 
-                                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
-                                        <div className="py-1">
-                                            <div className="px-4 py-2 text-sm text-gray-500 border-b">
-                                                {user?.email}
-                                            </div>
-                                            <Link
-                                                href="/profile"
-                                                className="flex items-center space-x-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                                            >
-                                                <Settings className="w-4 h-4" />
-                                                <span>Profile Settings</span>
-                                            </Link>
-                                            <button
-                                                onClick={handleLogout}
-                                                className="flex items-center space-x-2 w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"
-                                            >
-                                                <LogOut className="w-4 h-4" />
-                                                <span>Sign Out</span>
-                                            </button>
-                                        </div>
+                                    {/* Dropdown Menu */}
+                                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 invisible group-hover:visible opacity-0 group-hover:opacity-100 transition-all duration-200">
+                                        <Link
+                                            href="/profile"
+                                            className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                        >
+                                            <User className="w-4 h-4 mr-2" />
+                                            Profile
+                                        </Link>
+                                        <button
+                                            onClick={handleLogout}
+                                            className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                        >
+                                            <LogOut className="w-4 h-4 mr-2" />
+                                            Sign Out
+                                        </button>
                                     </div>
                                 </div>
                             </>
@@ -129,47 +152,39 @@ export default function Navbar() {
                                 <>
                                     <div className="px-3 py-2 text-sm text-gray-500 border-b border-gray-100">
                                         Welcome, {user?.firstName || user?.username}
+                                        <br />
+                                        <span className="text-xs">
+                                            {user?.roles?.includes('ROLE_STAFF') ? 'Staff Member' : 'Client'}
+                                        </span>
                                     </div>
 
-                                    <Link
-                                        href="/dashboard"
-                                        className="flex items-center space-x-2 px-3 py-2 rounded-md text-gray-700 hover:text-construction-orange hover:bg-gray-50"
-                                        onClick={() => setIsMenuOpen(false)}
-                                    >
-                                        <Home className="w-4 h-4" />
-                                        <span>Dashboard</span>
-                                    </Link>
-
-                                    <Link
-                                        href="/equipment"
-                                        className="flex items-center space-x-2 px-3 py-2 rounded-md text-gray-700 hover:text-construction-orange hover:bg-gray-50"
-                                        onClick={() => setIsMenuOpen(false)}
-                                    >
-                                        <HardHat className="w-4 h-4" />
-                                        <span>Equipment</span>
-                                    </Link>
-
-                                    <Link
-                                        href="/booking"
-                                        className="flex items-center space-x-2 px-3 py-2 rounded-md text-gray-700 hover:text-construction-orange hover:bg-gray-50"
-                                        onClick={() => setIsMenuOpen(false)}
-                                    >
-                                        <Calendar className="w-4 h-4" />
-                                        <span>Book Rental</span>
-                                    </Link>
+                                    {navigationItems.map((item) => {
+                                        const Icon = item.icon;
+                                        return (
+                                            <Link
+                                                key={item.name}
+                                                href={item.href}
+                                                className="flex items-center space-x-2 px-3 py-2 rounded-md text-gray-700 hover:text-construction-orange hover:bg-gray-50"
+                                                onClick={() => setIsMenuOpen(false)}
+                                            >
+                                                <Icon className="w-4 h-4" />
+                                                <span>{item.name}</span>
+                                            </Link>
+                                        );
+                                    })}
 
                                     <Link
                                         href="/profile"
                                         className="flex items-center space-x-2 px-3 py-2 rounded-md text-gray-700 hover:text-construction-orange hover:bg-gray-50"
                                         onClick={() => setIsMenuOpen(false)}
                                     >
-                                        <Settings className="w-4 h-4" />
-                                        <span>Profile Settings</span>
+                                        <User className="w-4 h-4" />
+                                        <span>Profile</span>
                                     </Link>
 
                                     <button
                                         onClick={handleLogout}
-                                        className="flex items-center space-x-2 w-full text-left px-3 py-2 rounded-md text-red-600 hover:bg-red-50"
+                                        className="flex items-center space-x-2 w-full px-3 py-2 rounded-md text-gray-700 hover:text-red-600 hover:bg-red-50"
                                     >
                                         <LogOut className="w-4 h-4" />
                                         <span>Sign Out</span>
@@ -186,7 +201,7 @@ export default function Navbar() {
                                     </Link>
                                     <Link
                                         href="/register"
-                                        className="block px-3 py-2 bg-construction-orange text-white rounded-md hover:bg-orange-600"
+                                        className="block px-3 py-2 rounded-md bg-construction-orange text-white hover:bg-orange-600"
                                         onClick={() => setIsMenuOpen(false)}
                                     >
                                         Get Started

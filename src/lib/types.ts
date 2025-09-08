@@ -1,35 +1,40 @@
 // User types - simplified to match backend exactly
+import {boolean} from "yup";
+
 export interface User {
     id: number;
     username: string;
     email: string;
-    firstName: string;
-    lastName: string;
+    firstName?: string;
+    lastName?: string;
     phone?: string;
-    roles: string[]; // Array of role strings like ["ROLE_CLIENT"] or ["ROLE_STAFF"]
+    roles: string[];
     createdAt: string;
 }
 
 // Equipment types
-export interface EquipmentCategory {
-    id: number;
-    name: string;
-    description: string;
-}
+export type EquipmentCategory =
+    | 'EXCAVATORS'
+    | 'BULLDOZERS'
+    | 'CRANES'
+    | 'COMPACTORS'
+    | 'GENERATORS'
+    | 'SCAFFOLDING'
+    | 'TOOLS';
+
 
 export interface Equipment {
+    monthlyRate: number;
     id: number;
     name: string;
     description: string;
     category: EquipmentCategory;
     dailyRate: number;
     weeklyRate: number;
-    monthlyRate: number;
     available: boolean;
     imageUrl?: string;
     specifications?: string;
     createdAt: string;
-    updatedAt: string;
 }
 
 // Rental types
@@ -140,7 +145,8 @@ export interface AuthContextType {
 
 // Component prop types
 export interface EquipmentCardProps {
-    equipment: Equipment;
-    onSelect?: (equipment: Equipment) => void;
-    selected?: boolean;
+    equipment: Equipment,
+    onSelect?: (equipment: Equipment) => void,
+    selected?: boolean,
+    showBookButton?: boolean
 }

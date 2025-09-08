@@ -144,6 +144,7 @@ export default function BookingForm({ preSelectedEquipmentId }: BookingFormProps
         }).format(price);
     };
 
+
     const onSubmit = async (data: BookingFormData) => {
         if (selectedEquipment.length === 0) {
             toast.error('Please select at least one equipment item');
@@ -153,22 +154,31 @@ export default function BookingForm({ preSelectedEquipmentId }: BookingFormProps
         try {
             setIsLoading(true);
 
+            // Convert dates to LocalDateTime format (no Z suffix for backend)
+            const startDate = data.startDate + 'T00:00:00';
+            const endDate = data.endDate + 'T23:59:59';
+
+            // Create the request data matching the backend DTO
             const bookingData = {
-                startDate: data.startDate,
-                endDate: data.endDate,
+                startDate: startDate,
+                endDate: endDate,
                 notes: data.notes || '',
-                equipmentSelections: selectedEquipment.map(({ equipment, quantity }) => ({
-                    equipmentId: equipment.id,
-                    quantity
-                }))
+                // Backend expects equipmentIds as List<Long>, not equipmentSelections
+                equipmentIds: selectedEquipment.map(({ equipment }) => equipment.id)
             };
 
-            await api.post('/rentals', bookingData);
+            console.log('📝 Sending booking data:', bookingData); // Debug log
+
+            const response = await api.post('/rentals', bookingData);
+
+            console.log('✅ Booking successful:', response.data); // Debug log
 
             toast.success('Rental booked successfully!');
             router.push('/dashboard');
         } catch (error: any) {
-            console.error('Booking error:', error);
+            console.error('❌ Booking error:', error);
+            console.error('❌ Error response:', error.response?.data); // More detailed error log
+
             const errorMessage = error.response?.data?.message || 'Failed to create booking. Please try again.';
             toast.error(errorMessage);
         } finally {
