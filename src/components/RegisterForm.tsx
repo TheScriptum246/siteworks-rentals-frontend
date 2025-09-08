@@ -22,7 +22,7 @@ export default function RegisterForm() {
         handleSubmit,
         formState: { errors },
     } = useForm<RegisterFormData>({
-        resolver: yupResolver(registerSchema),
+        resolver: yupResolver(registerSchema) as any,
     });
 
     const onSubmit = async (data: RegisterFormData) => {

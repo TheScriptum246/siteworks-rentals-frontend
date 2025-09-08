@@ -48,8 +48,12 @@ export const registerSchema = yup.object({
         .max(50, 'Last name must be less than 50 characters'),
     phone: yup
         .string()
-        .optional()
-        .matches(/^[\+]?[1-9][\d]{0,15}$/, 'Please enter a valid phone number'),
+        .notRequired()
+        .transform((value) => value === '' ? undefined : value)
+        .test('phone-format', 'Please enter a valid phone number', function(value) {
+            if (!value) return true; // Allow empty/undefined
+            return /^[\+]?[1-9][\d]{0,15}$/.test(value);
+        }),
 });
 
 // Booking schema
