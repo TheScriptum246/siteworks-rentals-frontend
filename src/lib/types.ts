@@ -1,4 +1,4 @@
-// User types - simplified to match backend
+// User types - simplified to match backend exactly
 export interface User {
     id: number;
     username: string;
@@ -6,7 +6,7 @@ export interface User {
     firstName: string;
     lastName: string;
     phone?: string;
-    roles: string[];
+    roles: string[]; // Array of role strings like ["ROLE_CLIENT"] or ["ROLE_STAFF"]
     createdAt: string;
 }
 

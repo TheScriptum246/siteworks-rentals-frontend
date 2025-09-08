@@ -1,7 +1,6 @@
 import axios, { AxiosResponse } from 'axios';
 import Cookies from 'js-cookie';
 import { jwtDecode } from 'jwt-decode';
-import toast from 'react-hot-toast';
 
 // Create axios instance
 const api = axios.create({
@@ -43,6 +42,21 @@ export const isTokenValid = (token: string): boolean => {
     }
 };
 
+// Flag to prevent multiple refresh attempts
+let isRefreshing = false;
+let failedQueue: any[] = [];
+
+const processQueue = (error: any, token: string | null = null) => {
+    failedQueue.forEach(({ resolve, reject }) => {
+        if (error) {
+            reject(error);
+        } else {
+            resolve(token);
+        }
+    });
+    failedQueue = [];
+};
+
 // Request interceptor to add auth token
 api.interceptors.request.use(
     (config) => {
@@ -67,48 +81,70 @@ api.interceptors.response.use(
 
         // Handle 401 errors (unauthorized)
         if (error.response?.status === 401 && !originalRequest._retry) {
+            if (isRefreshing) {
+                // If we're already refreshing, queue this request
+                return new Promise((resolve, reject) => {
+                    failedQueue.push({ resolve, reject });
+                }).then(token => {
+                    originalRequest.headers.Authorization = `Bearer ${token}`;
+                    return api(originalRequest);
+                }).catch(err => {
+                    return Promise.reject(err);
+                });
+            }
+
             originalRequest._retry = true;
+            isRefreshing = true;
 
             const refreshToken = getRefreshToken();
+
             if (refreshToken) {
                 try {
+                    console.log('🔄 Attempting to refresh token...');
+
                     const response = await axios.post(
                         `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api'}/auth/refresh`,
                         { refreshToken }
                     );
 
                     const { token: newToken, refreshToken: newRefreshToken } = response.data;
+
+                    console.log('✅ Token refreshed successfully');
+
                     setAuthTokens(newToken, newRefreshToken);
 
-                    // Retry the original request with new token
+                    // Update the original request with new token
                     originalRequest.headers.Authorization = `Bearer ${newToken}`;
+
+                    // Process the queued requests
+                    processQueue(null, newToken);
+
                     return api(originalRequest);
-                } catch (refreshError) {
-                    // Refresh failed, redirect to login
+                } catch (refreshError: any) {
+                    console.log('❌ Token refresh failed:', refreshError.response?.data?.message || refreshError.message);
+
+                    // Refresh failed, logout user
+                    processQueue(refreshError, null);
                     clearAuthTokens();
-                    if (typeof window !== 'undefined') {
+
+                    // Redirect to login if not already there
+                    if (!window.location.pathname.includes('/login')) {
                         window.location.href = '/login';
                     }
+
                     return Promise.reject(refreshError);
+                } finally {
+                    isRefreshing = false;
                 }
             } else {
-                // No refresh token, redirect to login
+                // No refresh token, logout
+                console.log('❌ No refresh token available');
+                processQueue(error, null);
                 clearAuthTokens();
-                if (typeof window !== 'undefined') {
+                if (!window.location.pathname.includes('/login')) {
                     window.location.href = '/login';
                 }
             }
-        }
-
-        // Handle other errors
-        const errorMessage = error.response?.data?.message || 'An error occurred';
-
-        // Don't show toast for auth-related requests or certain status codes
-        const isAuthRequest = error.config?.url?.includes('/auth/');
-        const is404 = error.response?.status === 404;
-
-        if (!isAuthRequest && !is404) {
-            toast.error(errorMessage);
         }
 
         return Promise.reject(error);

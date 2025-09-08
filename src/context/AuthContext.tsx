@@ -16,6 +16,8 @@ interface AuthContextType {
     register: (userData: RegisterRequest) => Promise<void>;
     logout: () => void;
     isAuthenticated: boolean;
+    isClient: boolean;
+    isStaff: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -45,7 +47,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                             return;
                         }
 
-                        // Build user data from decoded token
+                        // Build user data from decoded token and auth response
                         const userData: User = {
                             id: decoded.id || 0,
                             username: decoded.sub || '',
@@ -53,12 +55,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                             firstName: decoded.firstName || '',
                             lastName: decoded.lastName || '',
                             phone: decoded.phone || '',
-                            roles: decoded.roles ? decoded.roles.map((role: string) => ({
-                                id: 0,
-                                name: role as 'ROLE_CLIENT' | 'ROLE_STAFF' | 'ROLE_ADMIN'
-                            })) : [],
-                            createdAt: decoded.iat ? new Date(decoded.iat * 1000).toISOString() : '',
-                            updatedAt: decoded.iat ? new Date(decoded.iat * 1000).toISOString() : ''
+                            roles: decoded.roles || [], // Simple string array
+                            createdAt: decoded.iat ? new Date(decoded.iat * 1000).toISOString() : ''
                         };
 
                         setUser(userData);
@@ -90,28 +88,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 throw new Error('Invalid token received from server');
             }
 
-            // Decode the token to get user info
-            const decoded: any = jwtDecode(response.token);
-
+            // Build user data from auth response
             const userData: User = {
-                id: decoded.id || response.id || 0,
-                username: decoded.sub || response.username || '',
-                email: decoded.email || response.email || '',
-                firstName: decoded.firstName || '',
-                lastName: decoded.lastName || '',
-                phone: decoded.phone || '',
-                roles: response.roles ? response.roles.map((role: string) => ({
-                    id: 0,
-                    name: role as 'ROLE_CLIENT' | 'ROLE_STAFF' | 'ROLE_ADMIN'
-                })) : [],
-                createdAt: decoded.iat ? new Date(decoded.iat * 1000).toISOString() : '',
-                updatedAt: decoded.iat ? new Date(decoded.iat * 1000).toISOString() : ''
+                id: response.id,
+                username: response.username,
+                email: response.email,
+                firstName: '', // Will be populated from backend if needed
+                lastName: '',
+                phone: '',
+                roles: response.roles, // Simple string array
+                createdAt: new Date().toISOString()
             };
 
             setUser(userData);
             setToken(response.token);
 
-            toast.success(`Welcome back, ${userData.firstName || userData.username}!`);
+            toast.success(`Welcome back, ${userData.username}!`);
 
             // Redirect to dashboard
             router.push('/dashboard');
@@ -129,10 +121,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         try {
             setLoading(true);
             await authRegister(userData);
-
-            toast.success('Account created successfully! Please sign in.');
+            toast.success('Registration successful! Please sign in.');
+            router.push('/login');
         } catch (error: any) {
-            console.error('Register error:', error);
+            console.error('Registration error:', error);
             const errorMessage = error.message || 'Registration failed. Please try again.';
             toast.error(errorMessage);
             throw error;
@@ -141,18 +133,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
     };
 
-    const logout = (): void => {
+    const logout = () => {
         authLogout();
         setUser(null);
         setToken(null);
-        toast.success('Signed out successfully');
-        router.push('/');
+        toast.success('Logged out successfully');
+        router.push('/login');
     };
 
-    // Computed values
+    // Helper computed properties
     const isAuthenticated = !!user && !!token;
+    const isClient = user?.roles?.includes('ROLE_CLIENT') || false;
+    const isStaff = user?.roles?.includes('ROLE_STAFF') || false;
 
-    const value: AuthContextType = {
+    const value = {
         user,
         token,
         loading,
@@ -160,16 +154,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         register,
         logout,
         isAuthenticated,
+        isClient,
+        isStaff,
     };
 
-    return (
-        <AuthContext.Provider value={value}>
-            {children}
-        </AuthContext.Provider>
-    );
+    return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
-export function useAuth(): AuthContextType {
+export function useAuth() {
     const context = useContext(AuthContext);
     if (context === undefined) {
         throw new Error('useAuth must be used within an AuthProvider');
