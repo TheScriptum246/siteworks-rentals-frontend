@@ -3,7 +3,7 @@ import Cookies from 'js-cookie';
 import { jwtDecode } from 'jwt-decode';
 
 // Standardize API URL - use one consistent environment variable
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080/api';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080';
 
 console.log('🌐 API Base URL:', API_BASE_URL); // Debug line to check the URL
 
