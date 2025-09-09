@@ -28,17 +28,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
     const [token, setToken] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
+    const [isInitialized, setIsInitialized] = useState(false);
     const router = useRouter();
 
-    // Function to refresh user data from API (not just token)
+    // Function to refresh user data from API or token
     const refreshUserData = async () => {
         const savedToken = getAuthToken();
 
         if (savedToken && typeof savedToken === 'string' && savedToken.trim()) {
             try {
-                // Check if token is expired
+                // Check if token is expired first
                 const decoded: any = jwtDecode(savedToken);
                 const currentTime = Date.now() / 1000;
+
                 if (decoded.exp && decoded.exp < currentTime) {
                     console.log('Token expired, clearing auth');
                     clearAuthTokens();
@@ -47,32 +49,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                     return;
                 }
 
-                // Fetch fresh user data from API
-                const response = await api.get('/users/profile');
-                const userData: User = response.data;
-
-                // Add roles from token for compatibility
-                userData.role = decoded.roles || [];
-
-                setUser(userData);
-                setToken(savedToken);
-
-                console.log('✅ User data refreshed from API:', userData);
-            } catch (error) {
-                console.error('Error fetching user profile:', error);
-
-                // If API call fails, try to use token data
+                // Try to get user data from API first
                 try {
-                    const decoded: any = jwtDecode(savedToken);
-                    const currentTime = Date.now() / 1000;
-                    if (decoded.exp && decoded.exp < currentTime) {
-                        clearAuthTokens();
-                        setUser(null);
-                        setToken(null);
-                        return;
-                    }
+                    console.log('Fetching user profile from API...');
+                    const response = await api.get('/users/profile');
+                    const userData: User = response.data;
 
-                    // Build user data from decoded token as fallback
+                    // Add roles from token for compatibility
+                    userData.role = decoded.roles?.includes('ROLE_STAFF') ? 'STAFF' : 'CLIENT';
+
+                    setUser(userData);
+                    setToken(savedToken);
+                    console.log('✅ User data refreshed from API:', userData);
+
+                } catch (apiError) {
+                    console.warn('API call failed, using token data as fallback:', apiError);
+
+                    // Fallback to token data if API fails
                     const userData: User = {
                         id: decoded.id || 0,
                         username: decoded.sub || '',
@@ -86,25 +79,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
                     setUser(userData);
                     setToken(savedToken);
-
                     console.log('✅ User data from token fallback:', userData);
-                } catch (decodeError) {
-                    console.error('Error decoding token:', decodeError);
-                    clearAuthTokens();
-                    setUser(null);
-                    setToken(null);
                 }
+
+            } catch (decodeError) {
+                console.error('Error decoding token:', decodeError);
+                clearAuthTokens();
+                setUser(null);
+                setToken(null);
             }
         } else {
+            console.log('No token found, clearing auth state');
             setUser(null);
             setToken(null);
         }
     };
 
-    // Initialize auth state from stored token
+    // Initialize auth state ONCE on mount
     useEffect(() => {
         const initializeAuth = async () => {
+            if (isInitialized) return; // Prevent multiple initializations
+
             try {
+                console.log('Initializing auth...');
                 await refreshUserData();
             } catch (error) {
                 console.error('Auth initialization error:', error);
@@ -112,48 +109,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 setToken(null);
             } finally {
                 setLoading(false);
+                setIsInitialized(true);
+                console.log('Auth initialization complete');
             }
         };
 
-        initializeAuth();
-    }, []);
+        // Add a small delay to avoid race conditions
+        const timer = setTimeout(initializeAuth, 100);
 
-    // Listen to storage changes (for multi-tab support)
-    useEffect(() => {
-        const handleStorageChange = (e: StorageEvent) => {
-            if (e.key === 'token' || e.key === 'refreshToken') {
-                refreshUserData();
-            }
-        };
-
-        if (typeof window !== 'undefined') {
-            window.addEventListener('storage', handleStorageChange);
-            return () => window.removeEventListener('storage', handleStorageChange);
-        }
-    }, []);
-
-    // Listen to focus events to refresh user data when tab becomes active
-    useEffect(() => {
-        const handleFocus = () => {
-            const savedToken = getAuthToken();
-            if (savedToken && !user) {
-                refreshUserData();
-            }
-        };
-
-        if (typeof window !== 'undefined') {
-            window.addEventListener('focus', handleFocus);
-            return () => window.removeEventListener('focus', handleFocus);
-        }
-    }, [user]);
+        return () => clearTimeout(timer);
+    }, []); // Empty dependency array - run only once
 
     const login = async (credentials: LoginRequest): Promise<void> => {
         try {
             setLoading(true);
+            console.log('Attempting login...');
+
             const response = await authLogin(credentials);
 
-            // The authLogin should have already set the cookies
-            // Now refresh the user data from the stored token
+            // Refresh user data after successful login
             await refreshUserData();
 
             // Redirect based on user role
@@ -168,6 +142,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             }
 
             toast.success('Signed in successfully!');
+
         } catch (error: any) {
             console.error('Login error:', error);
             const errorMessage = error.message || 'Login failed. Please check your credentials.';
@@ -195,17 +170,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
 
     const logout = () => {
+        console.log('Logging out...');
         authLogout();
         setUser(null);
         setToken(null);
         toast.success('Logged out successfully');
-        router.push('/login');
+        router.push('/');
     };
 
     // Helper computed properties
     const isAuthenticated = !!user && !!token;
-    const isClient = user?.role?.includes('ROLE_CLIENT') || user?.role === 'CLIENT' || false;
-    const isStaff = user?.role?.includes('ROLE_STAFF') || user?.role === 'STAFF' || false;
+    const isClient = user?.role === 'CLIENT' || false;
+    const isStaff = user?.role === 'STAFF' || false;
 
     const value = {
         user,

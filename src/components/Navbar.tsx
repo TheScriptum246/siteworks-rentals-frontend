@@ -10,9 +10,7 @@ import {
     X,
     User,
     LogOut,
-    Home,
     Calendar,
-    Settings,
     Truck,
     Users,
     BarChart3
@@ -44,7 +42,7 @@ export default function Navbar() {
     const getNavigationItems = () => {
         if (!isAuthenticated || !user) return [];
 
-        if (user.roles?.includes('ROLE_STAFF')) {
+        if (user.role?.includes('ROLE_STAFF')) {
             // Staff navigation
             return [
                 { name: 'Dashboard', href: '/dashboard', icon: BarChart3 },
@@ -107,7 +105,7 @@ export default function Navbar() {
                                                 {user?.firstName || user?.username}
                                             </div>
                                             <div className="text-xs text-gray-500">
-                                                {user?.roles?.includes('ROLE_STAFF') ? 'Staff Member' : 'Client'}
+                                                {user?.role?.includes('ROLE_STAFF') ? 'Staff Member' : 'Client'}
                                             </div>
                                         </div>
 
@@ -172,7 +170,7 @@ export default function Navbar() {
                                         Welcome, {user?.firstName || user?.username}
                                         <br />
                                         <span className="text-xs">
-                                            {user?.roles?.includes('ROLE_STAFF') ? 'Staff Member' : 'Client'}
+                                            {user?.role?.includes('ROLE_STAFF') ? 'Staff Member' : 'Client'}
                                         </span>
                                     </div>
 

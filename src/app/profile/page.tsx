@@ -307,7 +307,7 @@ export default function ProfilePage() {
                                                 <div>
                                                     <p className="text-sm text-gray-500">Account Type</p>
                                                     <p className="font-medium text-gray-900">
-                                                        {user?.roles?.includes('ROLE_STAFF') ? 'Staff Member' : 'Client'}
+                                                        {user?.role?.includes('ROLE_STAFF') ? 'Staff Member' : 'Client'}
                                                     </p>
                                                 </div>
                                             </div>

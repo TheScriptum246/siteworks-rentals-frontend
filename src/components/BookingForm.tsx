@@ -174,10 +174,18 @@ export default function BookingForm({ preSelectedEquipmentId }: BookingFormProps
             console.log('✅ Booking successful:', response.data); // Debug log
 
             toast.success('Rental booked successfully!');
-            router.push('/dashboard');
+
+            // ✅ FIXED: Redirect based on user role, not hardcoded to dashboard
+            if (user?.role?.includes('ROLE_STAFF')) {
+                router.push('/dashboard');
+            } else {
+                // Clients should go to their rentals page to see the new booking
+                router.push('/my-rentals');
+            }
+
         } catch (error: any) {
             console.error('❌ Booking error:', error);
-            console.error('❌ Error response:', error.response?.data); // More detailed error log
+            console.error('❌ Error response:', error.response?.data);
 
             const errorMessage = error.response?.data?.message || 'Failed to create booking. Please try again.';
             toast.error(errorMessage);
@@ -277,7 +285,7 @@ export default function BookingForm({ preSelectedEquipmentId }: BookingFormProps
                                     <div className="flex items-center justify-between">
                                         <div>
                                             <h4 className="font-medium text-gray-900">{item.name}</h4>
-                                            <p className="text-sm text-gray-600">{item.category.name}</p>
+                                            <p className="text-sm text-gray-600">{item.category}</p>
                                             <p className="text-sm font-semibold text-construction-orange">
                                                 {formatPrice(item.dailyRate)}/day
                                             </p>
@@ -298,7 +306,7 @@ export default function BookingForm({ preSelectedEquipmentId }: BookingFormProps
                                     <div key={equipment.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                                         <div>
                                             <h4 className="font-medium text-gray-900">{equipment.name}</h4>
-                                            <p className="text-sm text-gray-600">{equipment.category.name}</p>
+                                            <p className="text-sm text-gray-600">{equipment.category}</p>
                                             <p className="text-sm font-semibold text-construction-orange">
                                                 {formatPrice(equipment.dailyRate)}/day each
                                             </p>

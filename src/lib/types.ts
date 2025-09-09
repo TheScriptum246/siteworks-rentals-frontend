@@ -1,4 +1,3 @@
-// User types - updated to match backend exactly
 export interface User {
     id: number;
     username: string;
@@ -11,7 +10,6 @@ export interface User {
     updatedAt?: string;
 }
 
-// Equipment types
 export type EquipmentCategory =
     | 'EXCAVATORS'
     | 'BULLDOZERS'
@@ -35,7 +33,6 @@ export interface Equipment {
     createdAt: string;
 }
 
-// Rental types
 export type RentalStatus = 'RESERVED' | 'CONFIRMED' | 'ACTIVE' | 'COMPLETED' | 'CANCELLED';
 
 export interface RentalEquipment {
@@ -62,7 +59,6 @@ export interface Rental {
     updatedAt: string;
 }
 
-// Auth request/response types
 export interface LoginRequest {
     username: string;
     password: string;
@@ -77,19 +73,17 @@ export interface RegisterRequest {
     phone?: string;
 }
 
-// Backend sends different response format
 export interface AuthResponse {
-    token?: string;        // Some responses use 'token'
-    accessToken?: string;  // Some responses use 'accessToken'
+    token?: string;
+    accessToken?: string;
     refreshToken: string;
     type: string;
     id: number;
     username: string;
     email: string;
-    roles: string[]; // Array of role strings like ["ROLE_CLIENT", "ROLE_STAFF"]
+    roles: string[];
 }
 
-// API response types
 export interface MessageResponse {
     message: string;
 }
@@ -99,7 +93,6 @@ export interface ApiError {
     details?: string[];
 }
 
-// Form types
 export interface LoginFormData {
     username: string;
     password: string;
@@ -125,7 +118,6 @@ export interface BookingFormData {
     notes?: string;
 }
 
-// Context types
 export interface AuthContextType {
     user: User | null;
     token: string | null;
@@ -139,7 +131,6 @@ export interface AuthContextType {
     refreshUserData: () => Promise<void>;
 }
 
-// Updated to match backend UserInfoResponse
 export interface UserInfoResponse {
     id: number;
     username: string;
@@ -152,10 +143,11 @@ export interface UserInfoResponse {
     createdAt: string;
 }
 
-// Component prop types
 export interface EquipmentCardProps {
     equipment: Equipment;
-    onSelect?: (equipment: Equipment, quantity: number) => void;
+    onSelect?: (equipment: Equipment) => void;
+    selected?: boolean;
+    showBookButton?: boolean;
 }
 
 export interface RentalCardProps {
@@ -163,7 +155,6 @@ export interface RentalCardProps {
     onStatusChange?: (rental: Rental, newStatus: RentalStatus) => void;
 }
 
-// Update profile request
 export interface UpdateProfileRequest {
     firstName?: string;
     lastName?: string;
@@ -171,7 +162,6 @@ export interface UpdateProfileRequest {
     email?: string;
 }
 
-// Change password request
 export interface ChangePasswordRequest {
     currentPassword: string;
     newPassword: string;

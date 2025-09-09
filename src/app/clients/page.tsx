@@ -1,5 +1,3 @@
-// src/app/clients/page.tsx
-
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -14,12 +12,10 @@ import {
     Mail,
     Phone,
     Calendar,
-    DollarSign,
     Eye,
     UserCheck,
     UserX,
     Shield,
-    HardHat
 } from 'lucide-react';
 
 interface Client {

@@ -14,10 +14,10 @@ export default function Home() {
     useEffect(() => {
         if (!loading && user) {
             // Redirect based on user role
-            if (user.roles?.includes('ROLE_STAFF')) {
+            if (user.role?.includes('ROLE_STAFF')) {
                 router.push('/dashboard');
             } else {
-                router.push('/equipment'); // Clients go to equipment page
+                router.push('/equipment');
             }
         }
     }, [user, loading, router]);

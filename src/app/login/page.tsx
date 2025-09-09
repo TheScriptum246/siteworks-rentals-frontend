@@ -13,7 +13,7 @@ export default function LoginPage() {
     useEffect(() => {
         if (!loading && user) {
             // Redirect based on user role
-            if (user.roles?.includes('ROLE_STAFF')) {
+            if (user.role?.includes('ROLE_STAFF')) {
                 router.push('/dashboard');
             } else {
                 router.push('/equipment'); // Clients go to equipment page

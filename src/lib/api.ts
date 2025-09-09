@@ -2,7 +2,6 @@ import axios, { AxiosResponse } from 'axios';
 import Cookies from 'js-cookie';
 import { jwtDecode } from 'jwt-decode';
 
-// Fix the API base URL to match backend configuration
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api';
 
 console.log('🌐 API Base URL:', API_BASE_URL);
@@ -56,7 +55,6 @@ export const isTokenValid = (token: string): boolean => {
     }
 };
 
-// Flag to prevent multiple refresh attempts
 let isRefreshing = false;
 let failedQueue: any[] = [];
 

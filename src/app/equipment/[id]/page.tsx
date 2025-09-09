@@ -187,7 +187,7 @@ export default function EquipmentDetailPage() {
                             <div>
                                 <div className="flex items-center space-x-2 mb-2">
                                     <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded">
-                                        {equipment.category.name}
+                                        {equipment.category}
                                     </span>
                                 </div>
                                 <h1 className="text-3xl font-bold text-gray-900 mb-4">
@@ -294,7 +294,7 @@ export default function EquipmentDetailPage() {
                                 </p>
                                 <div className="space-y-2 text-sm">
                                     <p className="text-gray-600">
-                                        📞 Call us: <span className="font-medium">(555) 123-4567</span>
+                                        📞 Call us: <span className="font-medium">+381 65 111 1111</span>
                                     </p>
                                     <p className="text-gray-600">
                                         📧 Email: <span className="font-medium">support@siteworksrentals.com</span>

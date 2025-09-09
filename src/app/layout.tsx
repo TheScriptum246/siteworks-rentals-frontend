@@ -2,7 +2,6 @@ import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from '@/context/AuthContext';
-import Footer from '@/components/Footer';
 import './globals.css';
 
 const inter = Inter({ subsets: ['latin'] });
@@ -25,7 +24,6 @@ export default function RootLayout({
                 <main className="flex-1">
                     {children}
                 </main>
-                <Footer />
             </div>
             <Toaster
                 position="top-right"

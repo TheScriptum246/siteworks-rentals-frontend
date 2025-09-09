@@ -1,11 +1,12 @@
 import api, { setAuthTokens, clearAuthTokens } from './api';
 import { LoginRequest, RegisterRequest, MessageResponse } from './types';
 
-// Define the actual response type from backend - uses 'token', not 'accessToken'
 interface AuthResponse {
-    token: string;          // Backend sends 'token' in JwtResponse
+    token?: string;
+    accessToken?: string;
     refreshToken: string;
-    type: string;           // "Bearer"
+    type?: string;
+    tokenType?: string;
     id: number;
     username: string;
     email: string;
@@ -21,14 +22,17 @@ export const login = async (credentials: LoginRequest): Promise<AuthResponse> =>
         console.log('✅ Login successful:', response.data);
         const responseData = response.data;
 
-        // Backend returns 'token', not 'accessToken'
-        if (!responseData.token) {
+        const authToken = responseData.token || responseData.accessToken;
+
+        if (!authToken) {
             console.error('❌ No token in response:', responseData);
             throw new Error('No token received from server');
         }
 
+        console.log('✅ Token found:', authToken ? 'Present' : 'Missing');
+
         // Store tokens in cookies
-        setAuthTokens(responseData.token, responseData.refreshToken);
+        setAuthTokens(authToken, responseData.refreshToken);
 
         return responseData;
     } catch (error: any) {
@@ -62,7 +66,6 @@ export const logout = async (): Promise<void> => {
         console.log('👋 Logging out...');
         await api.post('/auth/signout');
     } catch (error) {
-        // Even if the API call fails, we should clear local tokens
         console.warn('⚠️ Logout API call failed, but clearing local tokens');
     } finally {
         clearAuthTokens();

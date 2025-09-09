@@ -89,7 +89,7 @@ function BookingContent() {
                                 </div>
                                 <div className="mt-3 pt-3 border-t border-blue-200">
                                     <p className="text-sm text-blue-800">
-                                        Questions? Call us at <span className="font-semibold">(555) 123-4567</span> or email{' '}
+                                        Questions? Call us at <span className="font-semibold">+381 65 111 1111</span> or email{' '}
                                         <span className="font-semibold">support@siteworksrentals.com</span>
                                     </p>
                                 </div>

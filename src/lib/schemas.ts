@@ -51,7 +51,7 @@ export const registerSchema = yup.object({
         .notRequired()
         .transform((value) => value === '' ? undefined : value)
         .test('phone-format', 'Please enter a valid phone number', function(value) {
-            if (!value) return true; // Allow empty/undefined
+            if (!value) return true;
             return /^[\+]?[1-9][\d]{0,15}$/.test(value);
         }),
 });

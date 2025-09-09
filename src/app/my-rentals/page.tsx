@@ -140,7 +140,7 @@ export default function MyRentalsPage() {
     }
 
     // Redirect staff to dashboard
-    if (user?.roles?.includes('ROLE_STAFF')) {
+    if (user?.role?.includes('ROLE_STAFF')) {
         window.location.href = '/dashboard';
         return null;
     }
@@ -248,17 +248,32 @@ export default function MyRentalsPage() {
                                             </div>
                                             <div className="text-right">
                                                 <p className="font-semibold text-lg text-construction-orange">
-                                                    {formatPrice(rental.totalAmount || 0)}
+                                                    {formatPrice(rental.totalCost  || 0)}
                                                 </p>
                                             </div>
                                         </div>
 
-                                        <div className="grid grid-cols-2 gap-4 text-sm text-gray-600 mb-3">
-                                            <div>
-                                                <span className="font-medium">Start:</span> {new Date(rental.startDate).toLocaleDateString()}
-                                            </div>
-                                            <div>
-                                                <span className="font-medium">End:</span> {new Date(rental.endDate).toLocaleDateString()}
+                                        <div className="space-y-2 text-sm text-gray-600 mb-3">
+                                            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center">
+                                                <div className="flex items-center space-x-4">
+                                                    <div>
+                                                        <span className="font-medium text-gray-700">Start:</span>
+                                                        <span className="ml-1">{new Date(rental.startDate).toLocaleDateString()}</span>
+                                                    </div>
+                                                    <div>
+                                                        <span className="font-medium text-gray-700">End:</span>
+                                                        <span className="ml-1">{new Date(rental.endDate).toLocaleDateString()}</span>
+                                                    </div>
+                                                </div>
+                                                <div className="text-sm text-gray-500 mt-1 sm:mt-0">
+                                                    {(() => {
+                                                        const start = new Date(rental.startDate);
+                                                        const end = new Date(rental.endDate);
+                                                        const diffTime = Math.abs(end.getTime() - start.getTime());
+                                                        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                                                        return `${diffDays} day${diffDays !== 1 ? 's' : ''}`;
+                                                    })()}
+                                                </div>
                                             </div>
                                         </div>
 
@@ -272,10 +287,6 @@ export default function MyRentalsPage() {
 
                                         <div className="flex justify-between items-center">
                                             <div className="flex space-x-3">
-                                                <button className="text-construction-orange hover:text-orange-600 text-sm font-medium flex items-center space-x-1">
-                                                    <Eye className="w-4 h-4" />
-                                                    <span>View Details</span>
-                                                </button>
                                                 {rental.status === 'COMPLETED' && (
                                                     <button className="text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center space-x-1">
                                                         <Download className="w-4 h-4" />
