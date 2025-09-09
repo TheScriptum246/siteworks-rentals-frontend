@@ -1,6 +1,4 @@
-// User types - simplified to match backend exactly
-import {boolean} from "yup";
-
+// User types - updated to match backend exactly
 export interface User {
     id: number;
     username: string;
@@ -8,8 +6,9 @@ export interface User {
     firstName?: string;
     lastName?: string;
     phone?: string;
-    roles: string[];
+    role: 'CLIENT' | 'STAFF';
     createdAt: string;
+    updatedAt?: string;
 }
 
 // Equipment types
@@ -22,15 +21,14 @@ export type EquipmentCategory =
     | 'SCAFFOLDING'
     | 'TOOLS';
 
-
 export interface Equipment {
-    monthlyRate: number;
     id: number;
     name: string;
     description: string;
     category: EquipmentCategory;
     dailyRate: number;
     weeklyRate: number;
+    monthlyRate: number;
     available: boolean;
     imageUrl?: string;
     specifications?: string;
@@ -38,13 +36,7 @@ export interface Equipment {
 }
 
 // Rental types
-export interface RentalStatus {
-    RESERVED: 'RESERVED';
-    CONFIRMED: 'CONFIRMED';
-    ACTIVE: 'ACTIVE';
-    COMPLETED: 'COMPLETED';
-    CANCELLED: 'CANCELLED';
-}
+export type RentalStatus = 'RESERVED' | 'CONFIRMED' | 'ACTIVE' | 'COMPLETED' | 'CANCELLED';
 
 export interface RentalEquipment {
     id: number;
@@ -61,8 +53,9 @@ export interface Rental {
     staffMember?: User;
     startDate: string;
     endDate: string;
-    status: keyof RentalStatus;
+    status: RentalStatus;
     totalAmount: number;
+    totalCost: number; // Backend uses totalCost
     notes?: string;
     rentalEquipment: RentalEquipment[];
     createdAt: string;
@@ -84,14 +77,16 @@ export interface RegisterRequest {
     phone?: string;
 }
 
+// Backend sends different response format
 export interface AuthResponse {
-    token: string;
+    token?: string;        // Some responses use 'token'
+    accessToken?: string;  // Some responses use 'accessToken'
     refreshToken: string;
     type: string;
     id: number;
     username: string;
     email: string;
-    roles: string[]; // Array of role strings like ["ROLE_CLIENT"]
+    roles: string[]; // Array of role strings like ["ROLE_CLIENT", "ROLE_STAFF"]
 }
 
 // API response types
@@ -141,12 +136,43 @@ export interface AuthContextType {
     isAuthenticated: boolean;
     isClient: boolean;
     isStaff: boolean;
+    refreshUserData: () => Promise<void>;
+}
+
+// Updated to match backend UserInfoResponse
+export interface UserInfoResponse {
+    id: number;
+    username: string;
+    email: string;
+    firstName?: string;
+    lastName?: string;
+    phone?: string;
+    role: 'CLIENT' | 'STAFF';
+    roles: string[]; // Include roles array for compatibility
+    createdAt: string;
 }
 
 // Component prop types
 export interface EquipmentCardProps {
-    equipment: Equipment,
-    onSelect?: (equipment: Equipment) => void,
-    selected?: boolean,
-    showBookButton?: boolean
+    equipment: Equipment;
+    onSelect?: (equipment: Equipment, quantity: number) => void;
+}
+
+export interface RentalCardProps {
+    rental: Rental;
+    onStatusChange?: (rental: Rental, newStatus: RentalStatus) => void;
+}
+
+// Update profile request
+export interface UpdateProfileRequest {
+    firstName?: string;
+    lastName?: string;
+    phone?: string;
+    email?: string;
+}
+
+// Change password request
+export interface ChangePasswordRequest {
+    currentPassword: string;
+    newPassword: string;
 }

@@ -2,10 +2,10 @@ import axios, { AxiosResponse } from 'axios';
 import Cookies from 'js-cookie';
 import { jwtDecode } from 'jwt-decode';
 
-// Standardize API URL - use one consistent environment variable
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080';
+// Fix the API base URL to match backend configuration
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api';
 
-console.log('🌐 API Base URL:', API_BASE_URL); // Debug line to check the URL
+console.log('🌐 API Base URL:', API_BASE_URL);
 
 // Create axios instance
 const api = axios.create({
@@ -13,6 +13,7 @@ const api = axios.create({
     headers: {
         'Content-Type': 'application/json',
     },
+    timeout: 10000, // Add timeout
 });
 
 // Token management functions
@@ -28,8 +29,16 @@ export const setAuthTokens = (token: string, refreshToken: string): void => {
     const tokenExpiry = 1; // 1 day
     const refreshExpiry = 7; // 7 days
 
-    Cookies.set('token', token, { expires: tokenExpiry, secure: process.env.NODE_ENV === 'production' });
-    Cookies.set('refreshToken', refreshToken, { expires: refreshExpiry, secure: process.env.NODE_ENV === 'production' });
+    Cookies.set('token', token, {
+        expires: tokenExpiry,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax'
+    });
+    Cookies.set('refreshToken', refreshToken, {
+        expires: refreshExpiry,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax'
+    });
 };
 
 export const clearAuthTokens = (): void => {
@@ -66,7 +75,7 @@ const processQueue = (error: any, token: string | null = null) => {
 api.interceptors.request.use(
     (config) => {
         const token = getAuthToken();
-        console.log('🔐 Token in request:', token ? 'Present' : 'Not found'); // Debug line
+        console.log('🔐 Token in request:', token ? 'Present' : 'Not found');
 
         if (token && isTokenValid(token)) {
             config.headers.Authorization = `Bearer ${token}`;
@@ -74,6 +83,7 @@ api.interceptors.request.use(
         return config;
     },
     (error) => {
+        console.error('Request interceptor error:', error);
         return Promise.reject(error);
     }
 );
@@ -84,7 +94,13 @@ api.interceptors.response.use(
         return response;
     },
     async (error) => {
-        console.error('❌ API Error:', error.response?.status, error.response?.data); // Debug line
+        console.error('❌ API Error:', {
+            status: error.response?.status,
+            statusText: error.response?.statusText,
+            data: error.response?.data,
+            url: error.config?.url,
+            method: error.config?.method
+        });
 
         const originalRequest = error.config;
 
@@ -115,7 +131,13 @@ api.interceptors.response.use(
                         { refreshToken }
                     );
 
-                    const { accessToken: newToken, refreshToken: newRefreshToken } = response.data;
+                    // Handle both token and accessToken response formats
+                    const newToken = response.data.token || response.data.accessToken;
+                    const newRefreshToken = response.data.refreshToken;
+
+                    if (!newToken) {
+                        throw new Error('No token in refresh response');
+                    }
 
                     console.log('✅ Token refreshed successfully');
 
@@ -132,7 +154,7 @@ api.interceptors.response.use(
 
                     // Redirect to login
                     if (typeof window !== 'undefined') {
-                        window.location.href = '/auth/login';
+                        window.location.href = '/login';
                     }
 
                     return Promise.reject(refreshError);
@@ -144,7 +166,7 @@ api.interceptors.response.use(
                 clearAuthTokens();
 
                 if (typeof window !== 'undefined') {
-                    window.location.href = '/auth/login';
+                    window.location.href = '/login';
                 }
             }
         }

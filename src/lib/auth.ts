@@ -1,11 +1,11 @@
 import api, { setAuthTokens, clearAuthTokens } from './api';
 import { LoginRequest, RegisterRequest, MessageResponse } from './types';
 
-// Define the actual response type from backend (uses accessToken, not token)
+// Define the actual response type from backend - uses 'token', not 'accessToken'
 interface AuthResponse {
-    accessToken: string;  // Backend sends accessToken, not token
+    token: string;          // Backend sends 'token' in JwtResponse
     refreshToken: string;
-    tokenType: string;
+    type: string;           // "Bearer"
     id: number;
     username: string;
     email: string;
@@ -15,23 +15,24 @@ interface AuthResponse {
 // Login function
 export const login = async (credentials: LoginRequest): Promise<AuthResponse> => {
     try {
-        console.log('Login attempt with:', credentials.username);
+        console.log('🔐 Login attempt with:', credentials.username);
         const response = await api.post('/auth/signin', credentials);
 
-        console.log('Login successful:', response.data);
+        console.log('✅ Login successful:', response.data);
         const responseData = response.data;
 
-        if (!responseData.accessToken) {
-            console.error('No accessToken in response:', responseData);
+        // Backend returns 'token', not 'accessToken'
+        if (!responseData.token) {
+            console.error('❌ No token in response:', responseData);
             throw new Error('No token received from server');
         }
 
-        // Store tokens in cookies (use accessToken as the main token)
-        setAuthTokens(responseData.accessToken, responseData.refreshToken);
+        // Store tokens in cookies
+        setAuthTokens(responseData.token, responseData.refreshToken);
 
         return responseData;
     } catch (error: any) {
-        console.error('Login error:', error.response?.data || error.message);
+        console.error('❌ Login error:', error.response?.data || error.message);
         if (error.response?.data?.message) {
             throw new Error(error.response.data.message);
         }
@@ -42,9 +43,12 @@ export const login = async (credentials: LoginRequest): Promise<AuthResponse> =>
 // Register function
 export const register = async (userData: RegisterRequest): Promise<MessageResponse> => {
     try {
+        console.log('📝 Registration attempt for:', userData.username);
         const response = await api.post<MessageResponse>('/auth/signup', userData);
+        console.log('✅ Registration successful');
         return response.data;
     } catch (error: any) {
+        console.error('❌ Registration error:', error.response?.data || error.message);
         if (error.response?.data?.message) {
             throw new Error(error.response.data.message);
         }
@@ -55,21 +59,26 @@ export const register = async (userData: RegisterRequest): Promise<MessageRespon
 // Logout function
 export const logout = async (): Promise<void> => {
     try {
+        console.log('👋 Logging out...');
         await api.post('/auth/signout');
     } catch (error) {
         // Even if the API call fails, we should clear local tokens
-        console.warn('Logout API call failed, but clearing local tokens');
+        console.warn('⚠️ Logout API call failed, but clearing local tokens');
     } finally {
         clearAuthTokens();
+        console.log('✅ Tokens cleared');
     }
 };
 
-// Get current user info from token
+// Get current user info from API
 export const getCurrentUser = async () => {
     try {
+        console.log('👤 Fetching current user profile...');
         const response = await api.get('/users/profile');
+        console.log('✅ Profile fetched:', response.data);
         return response.data;
     } catch (error) {
+        console.error('❌ Failed to fetch user profile:', error);
         throw new Error('Failed to fetch user information');
     }
 };

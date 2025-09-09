@@ -6,6 +6,7 @@ import { jwtDecode } from 'jwt-decode';
 import toast from 'react-hot-toast';
 import { login as authLogin, register as authRegister, logout as authLogout } from '@/lib/auth';
 import { getAuthToken, clearAuthTokens } from '@/lib/api';
+import api from '@/lib/api';
 import { User, LoginRequest, RegisterRequest } from '@/lib/types';
 
 interface AuthContextType {
@@ -18,7 +19,7 @@ interface AuthContextType {
     isAuthenticated: boolean;
     isClient: boolean;
     isStaff: boolean;
-    refreshUserData: () => void;
+    refreshUserData: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -29,15 +30,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const [loading, setLoading] = useState(true);
     const router = useRouter();
 
-    // Function to refresh user data from token
-    const refreshUserData = () => {
+    // Function to refresh user data from API (not just token)
+    const refreshUserData = async () => {
         const savedToken = getAuthToken();
 
         if (savedToken && typeof savedToken === 'string' && savedToken.trim()) {
             try {
-                const decoded: any = jwtDecode(savedToken);
-
                 // Check if token is expired
+                const decoded: any = jwtDecode(savedToken);
                 const currentTime = Date.now() / 1000;
                 if (decoded.exp && decoded.exp < currentTime) {
                     console.log('Token expired, clearing auth');
@@ -47,28 +47,53 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                     return;
                 }
 
-                // Build user data from decoded token
-                const userData: User = {
-                    id: decoded.id || 0,
-                    username: decoded.sub || '',
-                    email: decoded.email || '',
-                    firstName: decoded.firstName || '',
-                    lastName: decoded.lastName || '',
-                    phone: decoded.phone || '',
-                    roles: decoded.roles || [],
-                    createdAt: decoded.iat ? new Date(decoded.iat * 1000).toISOString() : ''
-                };
+                // Fetch fresh user data from API
+                const response = await api.get('/users/profile');
+                const userData: User = response.data;
+
+                // Add roles from token for compatibility
+                userData.role = decoded.roles || [];
 
                 setUser(userData);
                 setToken(savedToken);
 
-                console.log('✅ User data refreshed:', userData);
-            } catch (decodeError) {
-                console.error('Error decoding token:', decodeError);
-                clearAuthTokens();
-                setUser(null);
-                setToken(null);
-                toast.error('Invalid session. Please sign in again.');
+                console.log('✅ User data refreshed from API:', userData);
+            } catch (error) {
+                console.error('Error fetching user profile:', error);
+
+                // If API call fails, try to use token data
+                try {
+                    const decoded: any = jwtDecode(savedToken);
+                    const currentTime = Date.now() / 1000;
+                    if (decoded.exp && decoded.exp < currentTime) {
+                        clearAuthTokens();
+                        setUser(null);
+                        setToken(null);
+                        return;
+                    }
+
+                    // Build user data from decoded token as fallback
+                    const userData: User = {
+                        id: decoded.id || 0,
+                        username: decoded.sub || '',
+                        email: decoded.email || '',
+                        firstName: decoded.firstName || '',
+                        lastName: decoded.lastName || '',
+                        phone: decoded.phone || '',
+                        role: decoded.roles?.includes('ROLE_STAFF') ? 'STAFF' : 'CLIENT',
+                        createdAt: decoded.iat ? new Date(decoded.iat * 1000).toISOString() : ''
+                    };
+
+                    setUser(userData);
+                    setToken(savedToken);
+
+                    console.log('✅ User data from token fallback:', userData);
+                } catch (decodeError) {
+                    console.error('Error decoding token:', decodeError);
+                    clearAuthTokens();
+                    setUser(null);
+                    setToken(null);
+                }
             }
         } else {
             setUser(null);
@@ -80,7 +105,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     useEffect(() => {
         const initializeAuth = async () => {
             try {
-                refreshUserData();
+                await refreshUserData();
             } catch (error) {
                 console.error('Auth initialization error:', error);
                 setUser(null);
@@ -101,8 +126,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             }
         };
 
-        window.addEventListener('storage', handleStorageChange);
-        return () => window.removeEventListener('storage', handleStorageChange);
+        if (typeof window !== 'undefined') {
+            window.addEventListener('storage', handleStorageChange);
+            return () => window.removeEventListener('storage', handleStorageChange);
+        }
     }, []);
 
     // Listen to focus events to refresh user data when tab becomes active
@@ -114,8 +141,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             }
         };
 
-        window.addEventListener('focus', handleFocus);
-        return () => window.removeEventListener('focus', handleFocus);
+        if (typeof window !== 'undefined') {
+            window.addEventListener('focus', handleFocus);
+            return () => window.removeEventListener('focus', handleFocus);
+        }
     }, [user]);
 
     const login = async (credentials: LoginRequest): Promise<void> => {
@@ -125,7 +154,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
             // The authLogin should have already set the cookies
             // Now refresh the user data from the stored token
-            refreshUserData();
+            await refreshUserData();
 
             // Redirect based on user role
             const savedToken = getAuthToken();
@@ -175,8 +204,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // Helper computed properties
     const isAuthenticated = !!user && !!token;
-    const isClient = user?.roles?.includes('ROLE_CLIENT') || false;
-    const isStaff = user?.roles?.includes('ROLE_STAFF') || false;
+    const isClient = user?.role?.includes('ROLE_CLIENT') || user?.role === 'CLIENT' || false;
+    const isStaff = user?.role?.includes('ROLE_STAFF') || user?.role === 'STAFF' || false;
 
     const value = {
         user,
