@@ -142,7 +142,7 @@ export default function RegisterForm() {
                             type="tel"
                             {...register('phone')}
                             className={`input-field ${errors.phone ? 'input-error' : ''}`}
-                            placeholder="+1 (555) 123-4567"
+                            placeholder="+381123456789"
                             disabled={isLoading}
                         />
                         {errors.phone && (
@@ -242,7 +242,6 @@ export default function RegisterForm() {
                     </button>
                 </form>
 
-                {/* Footer */}
                 <div className="mt-6 text-center text-sm text-gray-600">
                     <p>
                         Already have an account?{' '}

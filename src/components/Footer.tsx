@@ -9,12 +9,9 @@ import {
     MapPin,
     Clock,
     Facebook,
-    Twitter,
     Linkedin,
     Instagram,
     Shield,
-    FileText,
-    Users,
     Truck
 } from 'lucide-react';
 
@@ -43,10 +40,6 @@ export default function Footer() {
                             <a href="https://facebook.com" target="_blank" rel="noopener noreferrer"
                                className="text-gray-400 hover:text-construction-orange transition-colors">
                                 <Facebook className="w-5 h-5" />
-                            </a>
-                            <a href="https://twitter.com" target="_blank" rel="noopener noreferrer"
-                               className="text-gray-400 hover:text-construction-orange transition-colors">
-                                <Twitter className="w-5 h-5" />
                             </a>
                             <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer"
                                className="text-gray-400 hover:text-construction-orange transition-colors">
@@ -148,8 +141,8 @@ export default function Footer() {
                                 <div>
                                     <p className="text-sm font-medium">Visit Us</p>
                                     <p className="text-gray-300 text-sm">
-                                        123 Industrial Blvd<br />
-                                        Construction City, CC 12345
+                                        Knez Mihajlova 47<br />
+                                        Beograd 11000
                                     </p>
                                 </div>
                             </div>
@@ -179,9 +172,6 @@ export default function Footer() {
                                 </Link>
                                 <Link href="/terms" className="hover:text-construction-orange transition-colors">
                                     Terms of Service
-                                </Link>
-                                <Link href="/contact" className="hover:text-construction-orange transition-colors">
-                                    Contact
                                 </Link>
                             </div>
                         </div>
